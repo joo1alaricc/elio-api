@@ -649,14 +649,17 @@ function switchSnippet(btn, type) {
 
 function downloadSpec() {
     const server = document.getElementById('server-select').value;
-    const url = server.endsWith('/') ? server + 'docs/json' : server + '/docs/json';
-    fetch(url).then(res => res.blob()).then(blob => {
+    const url = server.endsWith('/') ? server + 'openapi.json' : server + '/openapi.json';
+    fetch(url).then(res => {
+        if (!res.ok) throw new Error();
+        return res.blob();
+    }).then(blob => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'openapi-spec.json';
+        a.download = 'openapi.json';
         a.click();
         showToast('SPEC DOWNLOADED', 'success');
-    }).catch(() => showToast('DOWNLOAD FAILED', 'error'));
+    }).catch(() => showToast('DOWNLOAD FAILED (openapi.json not found)', 'error'));
 }
 
 initPortal();
