@@ -280,8 +280,11 @@ function renderTagGroup(tag, endpoints) {
                                     <pre class="python-code" style="display: none; color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc; font-size:0.85rem; overflow-x:auto;"></pre>
                                 </div>
                             </div>
-                            <div class="response-box">
-                                <div class="res-header">JSON RESPONSE</div>
+                            <div class="response-box" style="display: none;">
+                                <div class="res-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>JSON RESPONSE</span>
+                                    <span class="latency-badge" style="display: none; background: var(--black); color: var(--yellow); padding: 2px 8px; font-size: 0.7rem; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--cyan); font-weight: 900;">0ms</span>
+                                </div>
                                 <div class="res-controls" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-top: 10px;">
                                     <div class="filter-group" style="display: flex; gap: 5px; flex-wrap: wrap;">
                                         <input type="text" class="filter-input" placeholder="Filter path... (e.g. data.user.name)" style="flex: 1; min-width: 0; background: var(--black); color: var(--yellow); border: 2px solid var(--black); padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; box-shadow: 2px 2px 0 var(--cyan);">
@@ -448,9 +451,21 @@ async function execute(path, method, status, btn) {
         }
     }
 
+    const startTime = performance.now();
     try {
         const res = await fetch(requestUrl, options);
+        const duration = Math.round(performance.now() - startTime);
         updateRateLimit(res);
+
+        /* Update Latency Badge */
+        const latencyBadge = container.querySelector('.latency-badge');
+        if (latencyBadge) {
+            latencyBadge.textContent = `${duration}ms`;
+            latencyBadge.style.display = 'inline-block';
+            if (duration < 300) latencyBadge.style.boxShadow = '2px 2px 0 var(--green)';
+            else if (duration < 1000) latencyBadge.style.boxShadow = '2px 2px 0 var(--orange)';
+            else latencyBadge.style.boxShadow = '2px 2px 0 var(--red)';
+        }
 
         let data;
         const contentType = res.headers.get("content-type");
