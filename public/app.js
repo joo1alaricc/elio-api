@@ -234,14 +234,16 @@ function renderEndpoints(paths) {
                             </div>
                             <div class="response-box">
                                 <div class="res-header">JSON RESPONSE</div>
-                                <div class="res-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding-top: 10px;">
-                                    <div class="filter-wrapper" style="display: flex; gap: 5px; flex: 1; min-width: 250px;">
-                                        <input type="text" class="filter-input" placeholder="Filter path... (e.g. data.user.name)" style="flex: 1; background: var(--black); color: var(--yellow); border: 2px solid var(--black); padding: 5px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; box-shadow: 2px 2px 0 var(--cyan);">
-                                        <button class="copy-btn" onclick="filterJsonResponse(this)" style="background: var(--yellow); color: var(--black); border: 2px solid var(--black); padding: 5px 10px; font-size: 0.8rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0 var(--magenta); text-transform: uppercase;">Filter</button>
+                                <div class="res-controls" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-top: 10px;">
+                                    <div class="filter-group" style="display: flex; flex-direction: column; gap: 8px;">
+                                        <div style="display: flex; gap: 5px;">
+                                            <input type="text" class="filter-input" placeholder="Filter path... (e.g. data.user.name)" style="flex: 1; background: var(--black); color: var(--yellow); border: 2px solid var(--black); padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; box-shadow: 2px 2px 0 var(--cyan);">
+                                            <button class="filter-btn" onclick="filterJsonResponse(this)" style="background: var(--yellow); color: var(--black); border: 2px solid var(--black); padding: 8px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0 var(--magenta); text-transform: uppercase; white-space: nowrap;">Filter</button>
+                                        </div>
                                     </div>
-                                    <button class="copy-btn" onclick="copyResponse(this)" style="background: var(--cyan); color: var(--black); border: 2px solid var(--black); padding: 5px 10px; font-size: 0.8rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0 var(--magenta); text-transform: uppercase;">Copy</button>
+                                    <button class="copy-btn-main" onclick="copyResponse(this)" style="width: 100%; background: var(--cyan); color: var(--black); border: 2px solid var(--black); padding: 10px; font-size: 0.9rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0 var(--magenta); text-transform: uppercase;">Copy Full JSON</button>
                                 </div>
-                                <a href="${path}" target="_blank" class="direct-link" style="word-break: break-all; margin-top: 5px;">${method.toUpperCase()} ${path.toUpperCase()}</a>
+                                <a href="${path}" target="_blank" class="direct-link" style="word-break: break-all; margin-bottom: 15px; display: inline-block;">${method.toUpperCase()} ${path.toUpperCase()}</a>
                                 <pre></pre>
                             </div>
                         </div>
@@ -371,8 +373,8 @@ async function execute(path, method, status, btn) {
         }
 
         container.style.display = 'block';
-        /* Store original data for filtering */
-        container.dataset.originalData = typeof data === 'object' ? JSON.stringify(data) : null;
+        /* Ensure clean JSON storage for filtering */
+        container.setAttribute('data-original', typeof data === 'object' ? JSON.stringify(data) : JSON.stringify({ response: data }));
 
         if (typeof data === 'object') {
             pre.innerHTML = syntaxHighlight(data);
@@ -481,21 +483,31 @@ function filterJsonResponse(btn) {
     const input = wrapper.querySelector('.filter-input');
     const pre = wrapper.querySelector('pre');
     const path = input.value.trim();
+    const raw = wrapper.getAttribute('data-original');
 
-    if (!wrapper.dataset.originalData) {
-        showToast('EXECUTE API FIRST TO GET DATA', 'error');
+    if (!raw) {
+        showToast('EXECUTE API FIRST', 'error');
         return;
     }
 
     try {
-        const fullData = JSON.parse(wrapper.dataset.originalData);
+        const fullData = JSON.parse(raw);
         if (!path) {
             pre.innerHTML = syntaxHighlight(fullData);
             return;
         }
 
-        /* Resolve nested keys */
-        const result = path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : undefined, fullData);
+        /* Access nested nested properties */
+        const keys = path.split('.');
+        let result = fullData;
+        for (const key of keys) {
+            if (result && result[key] !== undefined) {
+                result = result[key];
+            } else {
+                result = undefined;
+                break;
+            }
+        }
 
         if (result !== undefined) {
             pre.innerHTML = typeof result === 'object' ? syntaxHighlight(result) : `<span class="string">"${result}"</span>`;
@@ -504,7 +516,7 @@ function filterJsonResponse(btn) {
             showToast('PATH NOT FOUND', 'error');
         }
     } catch (e) {
-        showToast('FILTER FAILED', 'error');
+        showToast('FILTER ERROR', 'error');
     }
 }
 
