@@ -251,15 +251,18 @@ function renderTagGroup(tag, endpoints) {
                                 <button class="try-btn" style="background: var(--orange); color: #000; box-shadow: 4px 4px 0 var(--black);" onclick="toggleSnippets(this, '${path}', '${method}')">Generate Code</button>
                             </div>
                             <div class="snippet-box" style="display: none; margin-top: 15px; border: 3px solid var(--black); padding: 15px; background: var(--white); box-shadow: 4px 4px 0 var(--magenta);">
-                                <div class="snippet-header" style="display: flex; gap: 10px; border-bottom: 2px solid var(--black); padding-bottom: 8px; margin-bottom: 10px;">
-                                    <button class="snippet-tab active" onclick="switchSnippet(this, 'curl')">cURL</button>
-                                    <button class="snippet-tab" onclick="switchSnippet(this, 'fetch')">Fetch</button>
-                                    <button class="snippet-tab" onclick="switchSnippet(this, 'python')">Python</button>
+                                <div class="snippet-header" style="display: flex; gap: 10px; border-bottom: 2px solid var(--black); padding-bottom: 8px; margin-bottom: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                                    <div style="display: flex; gap: 5px;">
+                                        <button class="snippet-tab active" onclick="switchSnippet(this, 'curl')">cURL</button>
+                                        <button class="snippet-tab" onclick="switchSnippet(this, 'fetch')">Fetch</button>
+                                        <button class="snippet-tab" onclick="switchSnippet(this, 'python')">Python</button>
+                                    </div>
+                                    <button class="copy-btn-snippet" onclick="copySnippet(this)" style="background: var(--black); color: var(--yellow); border: 2px solid var(--black); padding: 4px 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">Copy Code</button>
                                 </div>
                                 <div class="snippet-content">
-                                    <pre class="curl-code" style="color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc;"></pre>
-                                    <pre class="fetch-code" style="display: none; color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc;"></pre>
-                                    <pre class="python-code" style="display: none; color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc;"></pre>
+                                    <pre class="curl-code" style="color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc; font-size:0.85rem; overflow-x:auto;"></pre>
+                                    <pre class="fetch-code" style="display: none; color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc; font-size:0.85rem; overflow-x:auto;"></pre>
+                                    <pre class="python-code" style="display: none; color: var(--black); background: #f0f0f0; padding: 10px; border: 1px solid #ccc; font-size:0.85rem; overflow-x:auto;"></pre>
                                 </div>
                             </div>
                             <div class="response-box">
@@ -421,24 +424,49 @@ async function execute(path, method, status, btn) {
 }
 
 function copyResponse(btn) {
-    const pre = btn.parentElement.querySelector('pre');
+    const wrapper = btn.closest('.response-box');
+    const pre = wrapper.querySelector('pre');
     if (pre && pre.textContent) {
-        navigator.clipboard.writeText(pre.textContent).then(() => {
-            const originalText = btn.textContent;
-            btn.textContent = 'COPIED!';
-            btn.style.background = 'var(--cyan)';
-            btn.style.color = 'var(--black)';
-            btn.style.boxShadow = '2px 2px 0 var(--yellow)';
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = 'var(--cyan)';
-                btn.style.color = 'var(--black)';
-                btn.style.boxShadow = '2px 2px 0 var(--magenta)';
-            }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
+        copyText(pre.textContent, btn, 'Copy Full JSON');
+    } else {
+        showToast('NO DATA TO COPY', 'error');
     }
+}
+
+function copySnippet(btn) {
+    const box = btn.closest('.snippet-box');
+    const activePre = box.querySelector('.snippet-content pre:not([style*="display: none"])');
+    if (activePre) {
+        copyText(activePre.textContent, btn, 'Copy Code');
+    }
+}
+
+function copyText(text, btn, originalText) {
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'COPIED!';
+        const oldBg = btn.style.background;
+        btn.style.background = 'var(--green)';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = oldBg || '';
+        }, 2000);
+        showToast('COPIED TO CLIPBOARD', 'success');
+    }).catch(() => {
+        /* Fallback for older browsers or non-https */
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            btn.textContent = 'COPIED!';
+            setTimeout(() => { btn.textContent = originalText; }, 2000);
+            showToast('COPIED!', 'success');
+        } catch (err) {
+            showToast('COPY FAILED', 'error');
+        }
+        document.body.removeChild(textArea);
+    });
 }
 
 function syntaxHighlight(json) {
