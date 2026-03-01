@@ -146,7 +146,7 @@
         <a href="/" class="btn" id="retry-btn" style="opacity: 0.5; pointer-events: none;">COOLDOWN_ACTIVE</a>
 
         <script>
-            let seconds = {{ RETRY_AFTER }};
+            let seconds = parseInt("{{RETRY_AFTER}}") || 60;
             const timerEl = document.getElementById('timer');
             const btnEl = document.getElementById('retry-btn');
 

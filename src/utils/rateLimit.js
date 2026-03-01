@@ -46,7 +46,7 @@ export const rateLimiter = () => {
                         const retryAfter = Math.ceil((client.resetTime - now) / 1000);
                         c.header('Retry-After', retryAfter.toString());
                         let html = await readFile('./public/errors/429.html', 'utf8');
-                        html = html.replace('{{RETRY_AFTER}}', retryAfter.toString());
+                        html = html.replace(/{{RETRY_AFTER}}/g, retryAfter.toString());
                         return c.html(html, 429);
                     } catch (e) {
                         return c.text('Too Many Requests', 429);
